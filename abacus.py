@@ -6,7 +6,6 @@ class Archivo:
             raise FileNotFoundError(f"Error: No se encontro el archivo {path}")
         
         self.lineas = [x.replace("\n", "") for x in self.archivo.readlines()]
-        self.copia = self.lineas.copy()
         self.linea_actual = inicio
     
     def __iter__(self):
@@ -28,9 +27,6 @@ class Archivo:
             self.lineas[index - 1] = value
         except IndexError:
             raise IndexError(f"El indice {index} no existe en el archivo {self.archivo.name}, se quizo acceder a la linea {index - 1}")
-    
-    def get_linea_copia(self, index):
-        return self.copia[index - 1]
 
     def set_linea_actual(self, index):
         if index < 1 or index > len(self.lineas):
@@ -41,8 +37,9 @@ class Archivo:
         with open(self.archivo.name.split(".")[0] + ".ab", "w") as f:
             for linea in self.lineas:
                 f.write(f"{linea}\n")
+    
+    def cerrar(self):
         self.archivo.close()
-
 
 traduccion = {
     "0": "Carga Inmediata",
@@ -109,15 +106,15 @@ class InterpreteAbacus:
     def __str__(self):
         return  "\n" + traduccion[self.programa[self.programa.linea_actual][0].upper()] + f" - {self.programa.linea_actual}\n" +\
                 f"AC: {self.pad(self.acumulador)} = {self.acumulador}[10]\n" +\
-                f"RI: {self.programa.get_linea_copia(self.programa.linea_actual)}"
+                f"RI: {self.programa[self.programa.linea_actual]}"
 
     def ejecutar(self):
         for linea in self.programa:
             if len(linea) == 0:
                 continue
-
-            if len(linea) != 4:
+            if len(linea) < 4:
                 raise LargoDeLineaIncorrecto(f"Error en la linea {self.programa.linea_actual}: {linea}, largo de linea incorrecto")
+                
             try:
                 self.acciones.get(linea[0].upper(), None)(linea[1:4].upper())
                 if self.debug:
@@ -130,23 +127,25 @@ class InterpreteAbacus:
 
             except TypeError:
                 raise KeyError(f"Error en la linea {self.programa.linea_actual}: {linea}, no se reconoce la accion {linea[0]}")
-        self.programa.archivo.close()
+        self.programa.cerrar()
 
 
 from sys import argv
 
 def printear_ayuda():
-    print(f"\nUso: python3 {argv[0]} <archivo> [-i <inicio>] [-t]")
-    print(f"  -i <inicio>: Indica la linea de inicio del programa [10] (por defecto 0)")
-    print(f"  -t: Traduce las acciones del programa a lenguaje natural (por defecto no)\n")
+    print(f"\nUso: python3 {argv[0]} <archivo> [-i <inicio>] [-d]")
+    print(f"  -i <inicio>: Indica el punto de carga del programa [16] (por defecto 0)")
+    print(f"  -d: Muestra el estado del AC, el RI y su línea de código en la terminal en cada instrucción ejecutada (por defecto no)\n")
+
 
 def conseguir_indice():
     try:
-        return int(argv[argv.index("-i") + 1] if "-i" in argv else 0)
+        return int(argv[argv.index("-i") + 1] if "-i" in argv else 0, 16)
     except IndexError:
         raise IndexError("No me pasaste el indice de inicio")
     except ValueError:
         raise ValueError("El indice no es un numero")
+
 
 if __name__ == "__main__":
     if len(argv) < 2:
