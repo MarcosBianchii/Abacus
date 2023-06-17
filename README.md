@@ -1,5 +1,5 @@
 # Interprete Abacus
----
+
 ## Uso
 
 ```sh
