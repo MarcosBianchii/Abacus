@@ -13,16 +13,16 @@ Suma de valores en una lista enlazada
 2F1 0001
 2F2 0000    Resultado (debe ser 000F)
 
-300 1500    Cargar el valor a sumar
-301 32F2    Sumarle la suma anterior
-302 22F2    Guardar la nueva suma
-303 1300    Cargar el instruccion de carga del nodo de la lista
-304 32F1    Sumar 1 para cargar la proxima direccion
-305 2306    Guardar la instruccion abajo
-306 AAAA    Cargar en el acumulador el valor de la direccion
-307 830C    Bifurcar a 30A si la direccion del proximo nodo es negativa
-308 32F0    Sumar 1000 para generar la instruccion de carga a esa direccion
+300 1500    Cargar el valor del nodo de la lista
+301 32F2    Sumarle las sumas anteriores
+302 22F2    Guardar el resultado de la suma
+303 1300    Cargar la instrucción de carga del nodo anterior
+304 32F1    Sumar 1 para cargar la proxima dirección
+305 2306    Guardar la instrucción abajo
+306 AAAA    Cargar en el acumulador el valor de la dirección
+307 830C    Bifurcar a 30C si la dirección de memorira del proximo nodo es negativa
+308 32F0    Sumar 1000 para generar la instruccion de carga a esa dirección
 309 2300    Almacenarla en la direccion 300
 30A 0000    Cargar 0 en el acumulador
-30B 7300    Bifurcar a 300
+30B 7300    Bifurcar a 300 si el acumulador == 0
 30C FFFF    Terminar el programa
