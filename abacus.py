@@ -1,13 +1,17 @@
 from csv import reader
 from sys import argv
 
+
 def pad(num, n):
     return "".join(num.split("x"))[4-n:4].rjust(n, "0").upper()
 
-class Archivo:
+
+class Programa:
     def __init__(self, path, inicio):
         if len(inicio) > 3 or int(inicio, 16) > int("999", 16):
-            raise ValueError(f"Error: El índice de inicio {inicio} es demasiado grande")
+            raise ValueError(f"El punto de carga ({inicio}) es mayor a 999[16]")
+        if int(inicio, 16) < 0:
+            raise ValueError(f"El punto de carga ({inicio}) debe ser un número positivo")
 
         try:
             archivo = open(path)
@@ -15,18 +19,18 @@ class Archivo:
             self.nombre_archivo = archivo.name
             archivo.close()
         except FileNotFoundError:
-            raise FileNotFoundError(f"Error: No se encontró el archivo {path}")
+            raise FileNotFoundError(f"No se encontró el archivo {path}")
         
         self.linea_actual = inicio
         self.linea_anterior = ""
-
 
     def __iter__(self):
         return self
     
     def __next__(self):
-        ri = self.memoria.get(self.linea_actual, None)
-        if ri is None:
+        try:
+            ri = self.memoria[self.linea_actual]
+        except KeyError:
             raise StopIteration
         self.linea_anterior = self.linea_actual
         self.linea_actual = pad(hex(int(self.linea_actual, 16) + 1), 3)
@@ -36,7 +40,7 @@ class Archivo:
         index = pad(hex(int(index, 16)), 3)
         ri = self.memoria.get(index, None)
         if ri is None:
-            raise IndexError(f"El índice {index} no existe en el archivo {self.nombre_archivo}, se quizo acceder a la linea {index}")
+            raise IndexError(f"Se quizo acceder a la linea {index} y no existe")
         return ri
     
     def __setitem__(self, index, value):
@@ -61,20 +65,21 @@ class Archivo:
 traduccion = {
     "0": "Carga Inmediata",
     "1": "Carga",
-    "2": "Guardar",
-    "3": "Sumar",
-    "4": "Negar",
-    "7": "Bifurcar si cero",
-    "8": "Bifurcar si negativo",
-    "9": "Bifurcar si positivo",
+    "2": "Guardado",
+    "3": "Suma",
+    "4": "Negación",
+    "7": "Bifurca si cero",
+    "8": "Bifurca si negativo",
+    "9": "Bifurca si positivo",
     "F": "Fín",
 }
 
+
 class InterpreteAbacus:
     def __init__(self, path, inicio="300", debug=False):
-        self.programa = Archivo(path, inicio)
-        self.debug = debug
+        self.programa = Programa(path, inicio)
         self.acumulador = 0
+        self.debug = debug
         self.acciones = {
             "0": lambda x: self.carga_inmediata(int(x, 16)),
             "1": lambda x: self.carga(int(self.programa[x], 16)),
@@ -126,12 +131,12 @@ class InterpreteAbacus:
         return  f"\n{traduccion[self.programa[self.programa.linea_anterior][0].upper()]}\n" +\
                 f" PC: {self.programa.linea_anterior}\n" +\
                 f" RI: {self.programa[self.programa.linea_anterior]}\n" +\
-                f" AC: {self.ac_pad(self.acumulador)} = {self.acumulador}[10]"
+                f" AC: {self.ac_pad(self.acumulador)}"
 
     def ejecutar(self):
         for ri in self.programa:
             if len(ri) < 4:
-                raise ValueError(f"Error en la linea {self.programa.linea_anterior}: {ri}, su largo es incorrecto")
+                raise ValueError(f"El largo de la linea {self.programa.linea_anterior} que contiene {ri} es incorrecto")
                 
             try:
                 self.acciones[ri[0].upper()](ri[1:4].upper())
@@ -144,23 +149,21 @@ class InterpreteAbacus:
                 break
 
             except KeyError:
-                raise KeyError(f"Error en la linea {self.programa.linea_anterior}: {ri}, no se reconoce el código de acción {ri[0]}")
+                raise KeyError(f"No se reconoce el código de acción de {ri} en la linea {self.programa.linea_anterior}")
 
 
 def printear_ayuda():
     print(f"\nUso: python3 {argv[0]} <archivo> [-i <inicio>] [-d]")
+    print(f"  <archivo>:   Archivo con el programa a ejecutar")
     print(f"  -i <inicio>: Indica el punto de carga del programa [16] (por defecto 300)")
-    print(f"  -d: Muestra el estado del AC, el RI y su línea de código en la terminal en cada instrucción ejecutada (por defecto no)\n")
+    print(f"  -d:          Muestra el estado del AC, el RI y su línea de código en la terminal en cada instrucción ejecutada (por defecto no)\n")
 
 
 def conseguir_indice():
     try:
-        pos = argv[argv.index("-i") + 1]
-        return pos if "-i" in argv and int(argv[pos], 16) < 16**3 else "300"
+        return argv[argv.index("-i") + 1] if "-i" in argv else "300"
     except IndexError:
         raise IndexError("No me pasaste el índice de inicio")
-    except ValueError:
-        raise ValueError("El índice de inicio debe ser un número hexadecimal de 3 dígitos")
 
 
 if __name__ == "__main__":
